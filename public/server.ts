@@ -1,8 +1,12 @@
 import dotenv from "dotenv";
 import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load environment variables from .env.local
-dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
 
 import app from "./app.js";
 import { db } from "./pkg/db/db.js";
@@ -10,14 +14,14 @@ import { db } from "./pkg/db/db.js";
 const PORT = process.env.PORT || 3000;
 
 // Retry database connection with exponential backoff
-const connectWithRetry = async (maxRetries = 5, delay = 2000) => {
+const connectWithRetry = async (maxRetries = 5, delay = 2000): Promise<void> => {
   for (let i = 0; i < maxRetries; i++) {
     try {
       await db.connect();
       await db.query('SELECT NOW()');
       console.log('Database connection test successful');
       return;
-    } catch (error) {
+    } catch (error: any) {
       if (i === maxRetries - 1) {
         console.error('Database connection test failed after retries:', error.message);
         console.error('Please check your database configuration in .env.local');
@@ -36,4 +40,5 @@ app.listen(PORT, async () => {
   console.log(`Health check available at: http://localhost:${PORT}/health`);
   
   await connectWithRetry();
-}); 
+});
+

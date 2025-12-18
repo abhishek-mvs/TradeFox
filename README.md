@@ -122,6 +122,24 @@ docker-compose restart
    npm start
    ```
 
+## PnL Calculation
+
+The system uses **FIFO (First In, First Out)** method:
+
+- **Realized PnL**: Calculated when positions are closed (sell orders match against oldest buy orders)
+- **Unrealized PnL**: Calculated based on current market prices vs. average entry price
+
+### Example
+
+1. Buy 1 BTC @ $90,000
+2. Buy 1 BTC @ $92,000
+   - Portfolio: 2 BTC, avg entry = $91,000
+3. Sell 1 BTC @ $93,000
+   - Realized PnL = +$3,000 (from first BTC bought at $90,000: $93,000 - $90,000)
+   - Portfolio: 1 BTC, avg entry = $92,000 (remaining position)
+4. If BTC current price = $90,000
+   - Unrealized PnL = ($90,000 - $92,000) * 1 = -$2,000
+   
 ## Database Schema
 
 ### Users
@@ -205,23 +223,6 @@ TradeFox/
 └── package.json
 ```
 
-## PnL Calculation
-
-The system uses **FIFO (First In, First Out)** method:
-
-- **Realized PnL**: Calculated when positions are closed (sell orders match against oldest buy orders)
-- **Unrealized PnL**: Calculated based on current market prices vs. average entry price
-
-### Example
-
-1. Buy 1 BTC @ $90,000
-2. Buy 1 BTC @ $92,000
-   - Portfolio: 2 BTC, avg entry = $91,000
-3. Sell 1 BTC @ $93,000
-   - Realized PnL = +$3,000 (from first BTC bought at $90,000: $93,000 - $90,000)
-   - Portfolio: 1 BTC, avg entry = $92,000 (remaining position)
-4. If BTC current price = $90,000
-   - Unrealized PnL = ($90,000 - $92,000) * 1 = -$2,000
 
 ## Testing
 

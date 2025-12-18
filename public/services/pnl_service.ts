@@ -1,7 +1,6 @@
 import { db } from '../pkg/db/db.js';
 import { PnLResponse } from '../utils/serializers.js';
 import { portfolioService } from './portfolio_service.js';
-import { pythClient } from '../clients/pyth.js';
 
 export class PnLService {
   // Calculate realized PnL using FIFO method
@@ -23,17 +22,25 @@ export class PnLService {
     );
 
     let realizedPnL = 0;
-    const positionQueue: Array<{ quantity: number; price: number }> = [];
+    // Maintain separate position queues for each asset symbol
+    const positionQueues: Map<string, Array<{ quantity: number; price: number }>> = new Map();
 
     for (const trade of trades.rows) {
+      const symbol = trade.base_symbol;
       const quantity = parseFloat(trade.base_quantity);
       const price = parseFloat(trade.price);
 
+      // Get or create position queue for this asset
+      if (!positionQueues.has(symbol)) {
+        positionQueues.set(symbol, []);
+      }
+      const positionQueue = positionQueues.get(symbol)!;
+
       if (trade.side === 'buy') {
-        // Add to position queue (FIFO)
+        // Add to position queue (FIFO) for this specific asset
         positionQueue.push({ quantity, price });
       } else {
-        // Sell - match against FIFO queue
+        // Sell - match against FIFO queue for this specific asset
         let remainingSellQuantity = quantity;
 
         while (remainingSellQuantity > 0 && positionQueue.length > 0) {
@@ -56,7 +63,7 @@ export class PnLService {
 
         if (remainingSellQuantity > 0) {
           // This shouldn't happen if portfolio is managed correctly
-          console.warn(`Unmatched sell quantity: ${remainingSellQuantity}`);
+          console.warn(`Unmatched sell quantity for ${symbol}: ${remainingSellQuantity}`);
         }
       }
     }

@@ -25,15 +25,7 @@ export class TradeService {
     const baseAssetId = baseAsset.rows[0].id;
     const quoteAssetId = quoteAsset.rows[0].id;
     const quoteQuantity = request.price * request.base_quantity;
-    console.log('quoteQuantity', quoteQuantity);
-    console.log('request.quote_symbol', request.quote_symbol);
-    console.log('request.base_symbol', request.base_symbol);
-    console.log('request.base_quantity', request.base_quantity);
-    console.log('request.price', request.price);
-    console.log('request.side', request.side);
-    console.log('request.user_id', request.user_id);
-    console.log('request.user_id', request.user_id);
-
+   
     // Validate balances before creating the trade
     if (request.side === 'buy') {
       // For buy orders: Check if user has sufficient USDC balance

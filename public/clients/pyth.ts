@@ -38,9 +38,9 @@ const PRICE_FEED_IDS: { [key: string]: string } = {
 
 // Fallback prices (used if Pyth is unavailable or for development)
 const FALLBACK_PRICES: { [key: string]: number } = {
-  BTC: 40000,
-  ETH: 2000,
-  SOL: 100,
+  BTC: 90000,
+  ETH: 3000,
+  SOL: 120,
 };
 
 // Pyth Network API endpoint

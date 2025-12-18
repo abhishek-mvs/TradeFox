@@ -45,7 +45,7 @@ Create a new trade order (assumed to be executed immediately).
   "user_id": "uuid-string",
   "base_symbol": "BTC",
   "quote_symbol": "USDC",
-  "price": 40000,
+  "price": 90000,
   "base_quantity": 1,
   "side": "buy"
 }
@@ -68,9 +68,9 @@ Create a new trade order (assumed to be executed immediately).
     "user_id": "uuid-string",
     "base_symbol": "BTC",
     "quote_symbol": "USDC",
-    "price": 40000,
+    "price": 90000,
     "base_quantity": 1,
-    "quote_quantity": 40000,
+    "quote_quantity": 90000,
     "side": "buy",
     "status": "EXECUTED",
     "created_at": "2024-01-01T00:00:00.000Z"
@@ -122,9 +122,9 @@ Retrieve all orders for a specific user.
         "user_id": "uuid-string",
         "base_symbol": "BTC",
         "quote_symbol": "USDC",
-        "price": 40000,
+        "price": 90000,
         "base_quantity": 1,
-        "quote_quantity": 40000,
+        "quote_quantity": 90000,
         "side": "buy",
         "status": "EXECUTED",
         "created_at": "2024-01-01T00:00:00.000Z"
@@ -177,9 +177,9 @@ Get current portfolio holdings for a user.
       {
         "asset_symbol": "BTC",
         "quantity": 2,
-        "avg_buying_price": 41000,
-        "current_price": 44000,
-        "unrealized_pnl": 6000
+        "avg_buying_price": 91000,
+        "current_price": 90000,
+        "unrealized_pnl": -2000
       }
     ]
   }
@@ -275,9 +275,9 @@ Quote asset:
 ## Price Data
 
 Current prices are fetched from Pyth Network's Hermes client. If Pyth is unavailable, fallback prices are used:
-- BTC: $40,000
-- ETH: $2,000
-- SOL: $100
+- BTC: $90,000
+- ETH: $3,000
+- SOL: $120
 
 ## Example Workflow
 
@@ -288,7 +288,7 @@ Current prices are fetched from Pyth Network's Hermes client. If Pyth is unavail
      "user_id": "user-uuid",
      "base_symbol": "BTC",
      "quote_symbol": "USDC",
-     "price": 40000,
+     "price": 90000,
      "base_quantity": 1,
      "side": "buy"
    }
@@ -301,7 +301,7 @@ Current prices are fetched from Pyth Network's Hermes client. If Pyth is unavail
      "user_id": "user-uuid",
      "base_symbol": "BTC",
      "quote_symbol": "USDC",
-     "price": 42000,
+     "price": 92000,
      "base_quantity": 1,
      "side": "buy"
    }
@@ -314,7 +314,7 @@ Current prices are fetched from Pyth Network's Hermes client. If Pyth is unavail
      "user_id": "user-uuid"
    }
    ```
-   Response shows: 2 BTC, avg entry = 41,000
+   Response shows: 2 BTC, avg entry = 91,000
 
 4. **Create a sell order:**
    ```bash
@@ -323,7 +323,7 @@ Current prices are fetched from Pyth Network's Hermes client. If Pyth is unavail
      "user_id": "user-uuid",
      "base_symbol": "BTC",
      "quote_symbol": "USDC",
-     "price": 43000,
+     "price": 93000,
      "base_quantity": 1,
      "side": "sell"
    }
@@ -336,9 +336,9 @@ Current prices are fetched from Pyth Network's Hermes client. If Pyth is unavail
      "user_id": "user-uuid"
    }
    ```
-   - Realized PnL = +2,000 (from selling 1 BTC bought at 40,000)
-   - Portfolio: 1 BTC, avg entry = 41,000
-   - Unrealized PnL = (current_price - 41,000) * 1
+   - Realized PnL = +3,000 (from selling 1 BTC bought at 90,000: 93,000 - 90,000)
+   - Portfolio: 1 BTC, avg entry = 92,000 (remaining position after FIFO)
+   - Unrealized PnL = (current_price - 92,000) * 1
 
 ## Error Handling
 

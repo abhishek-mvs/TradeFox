@@ -24,13 +24,18 @@ A backend service for tracking trading portfolios and calculating profit & loss 
 
 ## Prerequisites
 
+**For Docker setup (Recommended):**
+- Docker and Docker Compose
+
+**For local development:**
 - Node.js 20 or higher
 - PostgreSQL 16 or higher
-- Docker and Docker Compose (optional, for containerized setup)
 
 ## Setup Instructions
 
 ### Option 1: Using Docker Compose (Recommended)
+
+The `docker-compose.yml` file includes both the application and PostgreSQL database services, so no additional database setup is required.
 
 1. **Clone the repository:**
    ```bash
@@ -38,35 +43,40 @@ A backend service for tracking trading portfolios and calculating profit & loss 
    cd TradeFox
    ```
 
-2. **Create environment file:**
-   ```bash
-   cp .env.example .env.local
-   ```
-   
-   Or create `.env.local` with:
-   ```
-   DB_HOST=db
-   DB_PORT=5432
-   DB_NAME=tradefox
-   DB_USER=postgres
-   DB_PASSWORD=postgres
-   PORT=3000
-   ```
-
-3. **Start services:**
+2. **Start all services (app + database):**
    ```bash
    docker-compose up -d
    ```
+   
+   This will automatically:
+   - Start PostgreSQL 16 database on port `5433` (mapped from container port 5432)
+   - Wait for the database to be ready
+   - Run database migrations
+   - Seed the database with test data
+   - Start TradeFox application on port `3000`
+   
+   All environment variables are already configured in `docker-compose.yml`. If you need to customize them, you can create a `.env.local` file or modify the `docker-compose.yml` file directly.
 
-4. **Run database migrations:**
-   ```bash
-   docker-compose exec app npm run migrate
-   ```
+3. **Access the application:**
+   - API: `http://localhost:3000`
+   - Database: `localhost:5433` (if you need direct access)
+   
+   The database is automatically set up with migrations and seed data via the `docker-entrypoint.sh` script.
 
-5. **Seed the database:**
-   ```bash
-   docker-compose exec app npm run seed
-   ```
+**Useful Docker Compose commands:**
+```bash
+# View logs
+docker-compose logs -f app
+
+# Stop services
+docker-compose down
+
+# Stop and remove volumes (clean slate)
+docker-compose down -v
+
+# Restart services
+docker-compose restart
+```
 
 ### Option 2: Local Development
 
@@ -204,14 +214,14 @@ The system uses **FIFO (First In, First Out)** method:
 
 ### Example
 
-1. Buy 1 BTC @ $40,000
-2. Buy 1 BTC @ $42,000
-   - Portfolio: 2 BTC, avg entry = $41,000
-3. Sell 1 BTC @ $43,000
-   - Realized PnL = +$2,000 (from first BTC bought at $40,000)
-   - Portfolio: 1 BTC, avg entry = $41,000
-4. If BTC current price = $44,000
-   - Unrealized PnL = ($44,000 - $41,000) * 1 = +$3,000
+1. Buy 1 BTC @ $90,000
+2. Buy 1 BTC @ $92,000
+   - Portfolio: 2 BTC, avg entry = $91,000
+3. Sell 1 BTC @ $93,000
+   - Realized PnL = +$3,000 (from first BTC bought at $90,000: $93,000 - $90,000)
+   - Portfolio: 1 BTC, avg entry = $92,000 (remaining position)
+4. If BTC current price = $90,000
+   - Unrealized PnL = ($90,000 - $92,000) * 1 = -$2,000
 
 ## Testing
 
@@ -240,15 +250,22 @@ After seeding the database, you can test the API using the seeded user IDs. The 
 
 ### Environment Variables
 
-Required environment variables (in `.env.local`):
-- `DB_HOST` - Database host
-- `DB_PORT` - Database port
-- `DB_NAME` - Database name
-- `DB_USER` - Database user
+**For Docker setup:**
+All environment variables are pre-configured in `docker-compose.yml`. The default values are:
+- `DB_HOST=db` (database service name)
+- `DB_PORT=5432`
+- `DB_NAME=tradefox`
+- `DB_USER=postgres`
+- `DB_PASSWORD=postgres`
+- `PORT=3000`
+
+**For local development:**
+Create `.env.local` in the root directory with:
+- `DB_HOST` - Database host (default: `localhost`)
+- `DB_PORT` - Database port (default: `5432`)
+- `DB_NAME` - Database name (default: `tradefox`)
+- `DB_USER` - Database user (default: `postgres`)
 - `DB_PASSWORD` - Database password
-- `PORT` - Server port (default: 3000)
+- `PORT` - Server port (default: `3000`)
 
-## License
-
-ISC
 

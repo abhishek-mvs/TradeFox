@@ -23,9 +23,9 @@
 ### 4. Price Data
 - **Pyth Network Integration**: Uses Pyth Network's Hermes API for real-time price data
 - **Fallback Mechanism**: Falls back to hardcoded prices if Pyth is unavailable:
-  - BTC: $40,000
-  - ETH: $2,000
-  - SOL: $100
+  - BTC: $90,000
+  - ETH: $3,000
+  - SOL: $120
 - **Caching**: Prices are cached for 1 minute to reduce API calls
 
 ### 5. Request/Response Validation
@@ -39,8 +39,7 @@
 2. **Immediate Execution**: All orders are assumed to be executed immediately (no order book)
 3. **USDC as Quote Asset**: All trades use USDC as the quote asset
 4. **No Partial Fills**: Orders are fully executed or rejected
-5. **Database in Memory**: As per PRD, can use in-memory storage, but we've implemented PostgreSQL for better data persistence
-6. **Price Precision**: Prices and quantities use DECIMAL(20, 8) for precision
+5. **Price Precision**: Prices and quantities use DECIMAL(20, 8) for precision
 
 ## Database Design
 
@@ -76,25 +75,5 @@
 
 ## Testing Strategy
 
-- **Unit Tests**: Can be added for services (portfolio calculation, PnL calculation)
-- **Integration Tests**: Can be added for API endpoints
+- **Unit Tests**: Added for services (portfolio calculation, PnL calculation, trade service)
 - **Seed Data**: Script provided to populate database with test users and assets
-
-## Future Enhancements
-
-1. **Authentication**: Add JWT-based authentication
-2. **Order Book**: Implement order matching engine
-3. **Multiple Users**: Add proper user management
-4. **Historical Data**: Add endpoints for historical portfolio/PnL
-5. **WebSocket**: Real-time price updates
-6. **Rate Limiting**: Add rate limiting for API endpoints
-7. **Logging**: Add structured logging
-8. **Metrics**: Add monitoring and metrics
-
-## Trade-offs
-
-1. **FIFO vs Average Cost**: Chose FIFO for realized PnL as it's more transparent and commonly used
-2. **PostgreSQL vs In-Memory**: Chose PostgreSQL for data persistence, even though PRD allows in-memory
-3. **TypeScript vs JavaScript**: Chose TypeScript for better type safety and maintainability
-4. **Synchronous vs Asynchronous**: All operations are synchronous for simplicity
-

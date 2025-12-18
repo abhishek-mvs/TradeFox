@@ -24,6 +24,27 @@ A backend service for tracking trading portfolios and calculating profit & loss 
 
 ## Prerequisites
 
+## Quick Live Testing
+
+The TradeFox backend is already deployed on [Railway](https://railway.app/). You can instantly try out all endpoints using the following [Postman Collection](https://tradefox.postman.co/workspace/Projects~cf2816fa-c172-4bfc-8ace-bbb253d54032/collection/18878970-90daf669-0025-4e8e-b2f6-37bbd6887eb0?action=share&creator=18878970):
+
+- [👉 TradeFox Public Postman Collection](https://tradefox.postman.co/workspace/Projects~cf2816fa-c172-4bfc-8ace-bbb253d54032/collection/18878970-90daf669-0025-4e8e-b2f6-37bbd6887eb0?action=share&creator=18878970)
+
+**Base URL for all API requests:**  
+`https://tradefox-production.up.railway.app`
+
+You can use this domain with the Postman collection or with your own HTTP client.
+
+Example:  
+```bash
+curl -X POST https://tradefox-production.up.railway.app/get_portfolio \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"your-uuid"}'
+```
+
+_See the [API documentation](API_DOCUMENTATION.md) for endpoint details and request/response formats._
+
+
 **For Docker setup (Recommended):**
 - Docker and Docker Compose
 

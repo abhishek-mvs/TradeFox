@@ -8,6 +8,7 @@ TradeFox is a trading portfolio and PnL tracker service that allows users to rec
 
 ```
 http://localhost:3000
+https://tradefox-production.up.railway.app (Deployed in railway)
 ```
 
 ## Authentication
@@ -33,7 +34,108 @@ Check if the service is running.
 
 ---
 
-### 2. Create Order
+### 2. Get All Users
+
+Retrieve a list of all users in the system.
+
+**Endpoint:** `GET /users`
+
+**Request:** No request body required
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "users": [
+      {
+        "id": "uuid-string",
+        "name": "Test User 1",
+        "created_at": "2024-01-01T00:00:00.000Z",
+        "updated_at": "2024-01-01T00:00:00.000Z"
+      },
+      {
+        "id": "uuid-string",
+        "name": "Test User 2",
+        "created_at": "2024-01-01T00:00:00.000Z",
+        "updated_at": "2024-01-01T00:00:00.000Z"
+      }
+    ],
+    "total": 2
+  }
+}
+```
+
+**Response Fields:**
+- `users`: Array of user objects
+  - `id`: UUID of the user
+  - `name`: Name of the user
+  - `created_at`: Timestamp when user was created
+  - `updated_at`: Timestamp when user was last updated
+- `total`: Total number of users
+
+**Error Response (500):**
+```json
+{
+  "success": false,
+  "error": "Failed to fetch users"
+}
+```
+
+---
+
+### 3. Create User
+
+Create a new user in the system.
+
+**Endpoint:** `POST /users`
+
+**Request Body:**
+```json
+{
+  "name": "New User Name"
+}
+```
+
+**Request Parameters:**
+- `name` (string, required): Name of the user (1-255 characters)
+
+**Success Response (201):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid-string",
+    "name": "New User Name",
+    "created_at": "2024-01-01T00:00:00.000Z",
+    "updated_at": "2024-01-01T00:00:00.000Z"
+  }
+}
+```
+
+**Response Fields:**
+- `id`: UUID of the newly created user
+- `name`: Name of the user
+- `created_at`: Timestamp when user was created
+- `updated_at`: Timestamp when user was last updated
+
+**Error Response (400):**
+```json
+{
+  "success": false,
+  "error": "Validation error",
+  "details": [
+    {
+      "path": ["name"],
+      "message": "Name is required"
+    }
+  ]
+}
+```
+
+---
+
+### 4. Create Order
 
 Create a new trade order (assumed to be executed immediately).
 
@@ -94,7 +196,7 @@ Create a new trade order (assumed to be executed immediately).
 
 ---
 
-### 3. Get Orders
+### 5. Get Orders
 
 Retrieve all orders for a specific user.
 
@@ -151,7 +253,7 @@ Retrieve all orders for a specific user.
 
 ---
 
-### 4. Get Portfolio
+### 6. Get Portfolio
 
 Get current portfolio holdings for a user.
 
@@ -204,7 +306,7 @@ Get current portfolio holdings for a user.
 
 ---
 
-### 5. Get PnL
+### 7. Get PnL
 
 Get profit and loss information for a user.
 

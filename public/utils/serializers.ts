@@ -34,11 +34,16 @@ export const UpdateUSDCBalanceRequestSchema = z.object({
   }),
 });
 
+export const CreateUserRequestSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters'),
+});
+
 export type CreateOrderRequest = z.infer<typeof CreateOrderRequestSchema>;
 export type GetOrdersRequest = z.infer<typeof GetOrdersRequestSchema>;
 export type GetPortfolioRequest = z.infer<typeof GetPortfolioRequestSchema>;
 export type GetPnLRequest = z.infer<typeof GetPnLRequestSchema>;
 export type UpdateUSDCBalanceRequest = z.infer<typeof UpdateUSDCBalanceRequestSchema>;
+export type CreateUserRequest = z.infer<typeof CreateUserRequestSchema>;
 
 // Response types
 export interface TradeResponse {
@@ -85,6 +90,18 @@ export interface PnLResponse {
 export interface OrdersResponse {
   user_id: string;
   orders: TradeResponse[];
+  total: number;
+}
+
+export interface UserResponse {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UsersResponse {
+  users: UserResponse[];
   total: number;
 }
 

@@ -24,6 +24,13 @@ A backend service for tracking trading portfolios and calculating profit & loss 
 
 ## Prerequisites
 
+**For Docker setup (Recommended):**
+- Docker and Docker Compose
+
+**For local development:**
+- Node.js 20 or higher
+- PostgreSQL 16 or higher
+
 ## Quick Live Testing
 
 The TradeFox backend is already deployed on [Railway](https://railway.app/). You can instantly try out all endpoints using the following [Postman Collection](https://tradefox.postman.co/workspace/Projects~cf2816fa-c172-4bfc-8ace-bbb253d54032/collection/18878970-90daf669-0025-4e8e-b2f6-37bbd6887eb0?action=share&creator=18878970):
@@ -44,13 +51,6 @@ curl -X POST https://tradefox-production.up.railway.app/get_portfolio \
 
 _See the [API documentation](API_DOCUMENTATION.md) for endpoint details and request/response formats._
 
-
-**For Docker setup (Recommended):**
-- Docker and Docker Compose
-
-**For local development:**
-- Node.js 20 or higher
-- PostgreSQL 16 or higher
 
 ## Setup Instructions
 
@@ -210,6 +210,19 @@ See [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) for detailed API documentatio
 - `POST /get_portfolio` - Get user's portfolio
 - `POST /get_pnl` - Get user's PnL
 
+
+
+## Testing
+
+After seeding the database, you can test the API using the seeded user IDs. The seed script creates:
+- 3 test users
+- 3 assets: BTC, ETH, SOL
+- USDC as quote asset
+
+There are also unit tests for PnL and portfolio calculations to ensure financial logic correctness:
+- `public/services/__tests__/pnl_service.test.ts` (PnL calculation tests)
+- `public/services/__tests__/portfolio_service.test.ts` (portfolio calculation tests)
+
 ## Project Structure
 
 ```
@@ -244,13 +257,6 @@ TradeFox/
 └── package.json
 ```
 
-
-## Testing
-
-After seeding the database, you can test the API using the seeded user IDs. The seed script creates:
-- 3 test users
-- 3 assets: BTC, ETH, SOL
-- USDC as quote asset
 
 ## Assumptions
 

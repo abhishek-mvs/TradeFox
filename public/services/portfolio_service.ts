@@ -3,6 +3,79 @@ import { PortfolioItemResponse } from '../utils/serializers.js';
 import { pythClient } from '../clients/pyth.js';
 
 export class PortfolioService {
+  /**
+   * Recalculate average cost using FIFO method by simulating all trades
+   * This ensures consistency with PnL calculation
+   */
+  private async recalculateAverageCostFIFO(
+    userId: string,
+    assetId: string,
+    expectedRemainingQuantity: number
+  ): Promise<number> {
+    // Get all executed trades for this asset, ordered by time
+    const trades = await db.query(
+      `SELECT 
+        t.price,
+        t.base_quantity,
+        t.side,
+        t.created_at
+       FROM trades t
+       WHERE t.user_id = $1 
+         AND t.base_asset_id = $2 
+         AND t.status = 'EXECUTED'
+       ORDER BY t.created_at ASC`,
+      [userId, assetId]
+    );
+
+    // Maintain FIFO queue of positions
+    const positionQueue: Array<{ quantity: number; price: number }> = [];
+
+    for (const trade of trades.rows) {
+      const quantity = parseFloat(trade.base_quantity);
+      const price = parseFloat(trade.price);
+
+      if (trade.side === 'buy') {
+        // Add to position queue (FIFO)
+        positionQueue.push({ quantity, price });
+      } else {
+        // Sell - match against FIFO queue
+        let remainingSellQuantity = quantity;
+
+        while (remainingSellQuantity > 0 && positionQueue.length > 0) {
+          const position = positionQueue[0];
+
+          if (position.quantity <= remainingSellQuantity) {
+            // Fully consume this position
+            remainingSellQuantity -= position.quantity;
+            positionQueue.shift();
+          } else {
+            // Partially consume this position
+            position.quantity -= remainingSellQuantity;
+            remainingSellQuantity = 0;
+          }
+        }
+      }
+    }
+
+    // Calculate average cost from remaining positions
+    let totalCost = 0;
+    let totalQuantity = 0;
+
+    for (const position of positionQueue) {
+      totalCost += position.quantity * position.price;
+      totalQuantity += position.quantity;
+    }
+
+    // Verify we have the expected remaining quantity
+    if (Math.abs(totalQuantity - expectedRemainingQuantity) > 0.0001) {
+      console.warn(
+        `Quantity mismatch: expected ${expectedRemainingQuantity}, calculated ${totalQuantity}`
+      );
+    }
+
+    return totalQuantity > 0 ? totalCost / totalQuantity : 0;
+  }
+
   // Update portfolio using FIFO method for average cost calculation
   async updatePortfolio(
     userId: string,
@@ -48,8 +121,7 @@ export class PortfolioService {
           [newQuantity, newAvgPrice, userId, assetId]
         );
       } else {
-        // Sell side - using FIFO, we just reduce quantity
-        // Average price stays the same for remaining quantity
+        // Sell side - using FIFO, recalculate average cost of remaining positions
         if (currentQuantity < quantity) {
           throw new Error('Insufficient balance for sell order');
         }
@@ -62,11 +134,19 @@ export class PortfolioService {
             [userId, assetId]
           );
         } else {
+          // Recalculate average cost using FIFO logic
+          // This ensures consistency with PnL calculation
+          const newAvgPrice = await this.recalculateAverageCostFIFO(
+            userId,
+            assetId,
+            newQuantity
+          );
+          
           await db.query(
             `UPDATE portfolio 
-             SET quantity = $1, updated_at = CURRENT_TIMESTAMP
-             WHERE user_id = $2 AND asset_id = $3`,
-            [newQuantity, userId, assetId]
+             SET quantity = $1, avg_buying_price = $2, updated_at = CURRENT_TIMESTAMP
+             WHERE user_id = $3 AND asset_id = $4`,
+            [newQuantity, newAvgPrice, userId, assetId]
           );
         }
       }

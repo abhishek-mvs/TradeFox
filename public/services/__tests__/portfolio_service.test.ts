@@ -68,26 +68,60 @@ describe('PortfolioService', () => {
       );
     });
 
-    it('should reduce quantity when selling', async () => {
+    it('should reduce quantity and recalculate average cost when selling using FIFO', async () => {
       const userId = 'test-user-id';
       const assetId = 'btc-asset-id';
       
+      // First call: check existing position
       mockDb.query.mockResolvedValueOnce({
         rows: [{
           quantity: '2',
-          avg_buying_price: '40000',
+          avg_buying_price: '41000', // Average of 40000 and 42000
         }],
       });
 
+      // Second call: get all trades for FIFO recalculation
+      // Scenario: BUY 1 @ 40000, BUY 1 @ 42000, SELL 1
+      mockDb.query.mockResolvedValueOnce({
+        rows: [
+          {
+            price: '40000',
+            base_quantity: '1',
+            side: 'buy',
+            created_at: new Date('2024-01-01'),
+          },
+          {
+            price: '42000',
+            base_quantity: '1',
+            side: 'buy',
+            created_at: new Date('2024-01-02'),
+          },
+          {
+            price: '43000',
+            base_quantity: '1',
+            side: 'sell',
+            created_at: new Date('2024-01-03'),
+          },
+        ],
+      });
+
+      // Third call: update portfolio
       mockDb.query.mockResolvedValueOnce({
         rows: [],
       });
 
       await portfolioService.updatePortfolio(userId, assetId, 1, 43000, 'sell');
 
+      // Verify FIFO recalculation query was called
+      expect(mockDb.query).toHaveBeenCalledWith(
+        expect.stringContaining('SELECT'),
+        expect.arrayContaining([userId, assetId])
+      );
+
+      // Verify portfolio was updated with correct average cost (42000, since 40000 was sold)
       expect(mockDb.query).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE portfolio'),
-        expect.arrayContaining([1, userId, assetId])
+        expect.arrayContaining([1, 42000, userId, assetId])
       );
     });
 
@@ -141,6 +175,136 @@ describe('PortfolioService', () => {
       await expect(
         portfolioService.updatePortfolio(userId, assetId, 2, 43000, 'sell')
       ).rejects.toThrow('Insufficient balance for sell order');
+    });
+
+    it('should recalculate average cost correctly after BUY, BUY, SELL, BUY sequence', async () => {
+      const userId = 'test-user-id';
+      const assetId = 'btc-asset-id';
+      
+      // Step 1: BUY 1 @ 40000
+      mockDb.query.mockResolvedValueOnce({ rows: [] });
+      mockDb.query.mockResolvedValueOnce({ rows: [] });
+      await portfolioService.updatePortfolio(userId, assetId, 1, 40000, 'buy');
+      
+      // Step 2: BUY 1 @ 42000
+      mockDb.query.mockResolvedValueOnce({
+        rows: [{ quantity: '1', avg_buying_price: '40000' }],
+      });
+      mockDb.query.mockResolvedValueOnce({ rows: [] });
+      await portfolioService.updatePortfolio(userId, assetId, 1, 42000, 'buy');
+      
+      // Step 3: SELL 1 @ 43000 (should remove 1 @ 40000, leaving 1 @ 42000)
+      mockDb.query.mockResolvedValueOnce({
+        rows: [{ quantity: '2', avg_buying_price: '41000' }],
+      });
+      mockDb.query.mockResolvedValueOnce({
+        rows: [
+          { price: '40000', base_quantity: '1', side: 'buy', created_at: new Date('2024-01-01') },
+          { price: '42000', base_quantity: '1', side: 'buy', created_at: new Date('2024-01-02') },
+          { price: '43000', base_quantity: '1', side: 'sell', created_at: new Date('2024-01-03') },
+        ],
+      });
+      mockDb.query.mockResolvedValueOnce({ rows: [] });
+      await portfolioService.updatePortfolio(userId, assetId, 1, 43000, 'sell');
+      
+      // Verify average cost was recalculated to 42000 (FIFO: oldest position removed)
+      const sellUpdateCalls = mockDb.query.mock.calls.filter(
+        (call: any[]) => call[0]?.includes('UPDATE portfolio') && call[1]?.[1] === 42000
+      );
+      expect(sellUpdateCalls.length).toBeGreaterThan(0);
+      const sellUpdateCall = sellUpdateCalls[sellUpdateCalls.length - 1];
+      expect(sellUpdateCall[1][0]).toBe(1); // Remaining quantity after sell
+      expect(sellUpdateCall[1][1]).toBe(42000); // Average cost after FIFO recalculation
+      
+      // Step 4: BUY 1 @ 44000 (should result in avg = 43000)
+      mockDb.query.mockResolvedValueOnce({
+        rows: [{ quantity: '1', avg_buying_price: '42000' }],
+      });
+      mockDb.query.mockResolvedValueOnce({ rows: [] });
+      await portfolioService.updatePortfolio(userId, assetId, 1, 44000, 'buy');
+      
+      // Verify final average is 43000 (weighted average: (1*42000 + 1*44000)/2)
+      const buyUpdateCalls = mockDb.query.mock.calls.filter(
+        (call: any[]) => call[0]?.includes('UPDATE portfolio') && call[1]?.[1] === 43000
+      );
+      expect(buyUpdateCalls.length).toBeGreaterThan(0);
+      const buyUpdateCall = buyUpdateCalls[buyUpdateCalls.length - 1];
+      expect(buyUpdateCall[1][0]).toBe(2); // Final quantity
+      expect(buyUpdateCall[1][1]).toBe(43000); // Final average cost
+    });
+
+    it('should handle partial sell with FIFO recalculation', async () => {
+      const userId = 'test-user-id';
+      const assetId = 'btc-asset-id';
+      
+      // Portfolio: 2 BTC (1 @ 40000, 1 @ 42000)
+      mockDb.query.mockResolvedValueOnce({
+        rows: [{
+          quantity: '2',
+          avg_buying_price: '41000',
+        }],
+      });
+
+      // Sell 0.5 BTC - should partially consume the first position (40000)
+      // Remaining: 0.5 @ 40000 and 1 @ 42000
+      mockDb.query.mockResolvedValueOnce({
+        rows: [
+          { price: '40000', base_quantity: '1', side: 'buy', created_at: new Date('2024-01-01') },
+          { price: '42000', base_quantity: '1', side: 'buy', created_at: new Date('2024-01-02') },
+          { price: '43000', base_quantity: '0.5', side: 'sell', created_at: new Date('2024-01-03') },
+        ],
+      });
+
+      mockDb.query.mockResolvedValueOnce({ rows: [] });
+
+      await portfolioService.updatePortfolio(userId, assetId, 0.5, 43000, 'sell');
+
+      // After selling 0.5: remaining positions are 0.5 @ 40000 and 1 @ 42000
+      // Average = (0.5 * 40000 + 1 * 42000) / 1.5 = (20000 + 42000) / 1.5 = 41333.33...
+      const updateCalls = mockDb.query.mock.calls.filter(
+        (call: any[]) => call[0]?.includes('UPDATE portfolio') && call[1]?.[0] === 1.5
+      );
+      expect(updateCalls.length).toBeGreaterThan(0);
+      const updateCall = updateCalls[updateCalls.length - 1];
+      expect(updateCall[1][0]).toBe(1.5); // Remaining quantity
+      // Average should be approximately 41333.33
+      expect(updateCall[1][1]).toBeCloseTo(41333.33, 2);
+    });
+
+    it('should handle multiple sells with FIFO recalculation', async () => {
+      const userId = 'test-user-id';
+      const assetId = 'btc-asset-id';
+      
+      // Portfolio: 3 BTC (1 @ 40000, 1 @ 42000, 1 @ 44000)
+      mockDb.query.mockResolvedValueOnce({
+        rows: [{
+          quantity: '3',
+          avg_buying_price: '42000',
+        }],
+      });
+
+      // Sell 2 BTC - should remove 1 @ 40000 and 1 @ 42000, leaving 1 @ 44000
+      mockDb.query.mockResolvedValueOnce({
+        rows: [
+          { price: '40000', base_quantity: '1', side: 'buy', created_at: new Date('2024-01-01') },
+          { price: '42000', base_quantity: '1', side: 'buy', created_at: new Date('2024-01-02') },
+          { price: '44000', base_quantity: '1', side: 'buy', created_at: new Date('2024-01-03') },
+          { price: '45000', base_quantity: '2', side: 'sell', created_at: new Date('2024-01-04') },
+        ],
+      });
+
+      mockDb.query.mockResolvedValueOnce({ rows: [] });
+
+      await portfolioService.updatePortfolio(userId, assetId, 2, 45000, 'sell');
+
+      // Verify average cost is 44000 (only remaining position)
+      const updateCalls = mockDb.query.mock.calls.filter(
+        (call: any[]) => call[0]?.includes('UPDATE portfolio') && call[1]?.[0] === 1
+      );
+      expect(updateCalls.length).toBeGreaterThan(0);
+      const updateCall = updateCalls[updateCalls.length - 1];
+      expect(updateCall[1][0]).toBe(1); // Remaining quantity
+      expect(updateCall[1][1]).toBe(44000); // Average cost
     });
   });
 

@@ -3,7 +3,7 @@ import { health } from "../controllers/health/index.js";
 import { createOrder, getOrders } from "../controllers/trade/index.js";
 import { getPortfolio } from "../controllers/portfolio/index.js";
 import { getPnL } from "../controllers/pnl/index.js";
-import { updateUSDCBalance } from "../controllers/usdc/index.js";
+import { updateUSDCBalance } from "../controllers/usdcFunds/index.js";
 
 const router = express.Router();
 

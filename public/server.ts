@@ -37,7 +37,7 @@ const connectWithRetry = async (maxRetries = 5, delay = 2000): Promise<void> => 
 // Connect to database on startup
 app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}`);
-  console.log(`Health check available 2 at: http://localhost:${PORT}/health`);
+  console.log(`Health check available at: http://localhost:${PORT}/health`);
   
   await connectWithRetry();
 });

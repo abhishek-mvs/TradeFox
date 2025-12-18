@@ -2,11 +2,30 @@
 interface PythPriceData {
   price?: {
     price?: string;
+    expo?: number;
+    conf?: string;
+    publish_time?: number;
+  };
+  ema_price?: {
+    price?: string;
+    expo?: number;
+    conf?: string;
+    publish_time?: number;
+  };
+  id?: string;
+  metadata?: {
+    prev_publish_time?: number;
+    proof_available_time?: number;
+    slot?: number;
   };
 }
 
 interface PythResponse {
   parsed?: PythPriceData[];
+  binary?: {
+    data?: string[];
+    encoding?: string;
+  };
 }
 
 // Pyth Network price feed IDs for the assets
@@ -62,15 +81,22 @@ export class PythClient {
       // Parse the price from Pyth response
       // The response structure may vary, so we handle it gracefully
       if (data.parsed && data.parsed[0] && data.parsed[0].price && data.parsed[0].price.price) {
-        const price = parseFloat(data.parsed[0].price.price);
+        const priceData = data.parsed[0].price;
+        const priceString = priceData.price;
+        const expo = priceData.expo ?? 0; // Default to 0 if expo is not provided
+        
+        // Calculate actual price: price * 10^expo
+        // priceString is guaranteed to be defined due to the if condition above
+        const priceValue = parseFloat(priceString!);
+        const actualPrice = priceValue * Math.pow(10, expo);
         
         // Cache the price
         this.priceCache.set(symbol, {
-          price,
+          price: actualPrice,
           timestamp: Date.now(),
         });
         
-        return price;
+        return actualPrice;
       } else {
         console.warn(`No price data in response for ${symbol}, using fallback`);
         return FALLBACK_PRICES[symbol] || 0;

@@ -65,9 +65,9 @@ export class PnLService {
   }
 
   async calculateUnrealizedPnL(userId: string): Promise<number> {
-    const portfolio = await portfolioService.getPortfolio(userId);
+    const { holdings } = await portfolioService.getPortfolio(userId);
     
-    return portfolio.reduce((total, holding) => {
+    return holdings.reduce((total: number, holding) => {
       return total + holding.unrealized_pnl;
     }, 0);
   }

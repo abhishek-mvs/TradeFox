@@ -25,6 +25,41 @@ export class TradeService {
     const baseAssetId = baseAsset.rows[0].id;
     const quoteAssetId = quoteAsset.rows[0].id;
     const quoteQuantity = request.price * request.base_quantity;
+    console.log('quoteQuantity', quoteQuantity);
+    console.log('request.quote_symbol', request.quote_symbol);
+    console.log('request.base_symbol', request.base_symbol);
+    console.log('request.base_quantity', request.base_quantity);
+    console.log('request.price', request.price);
+    console.log('request.side', request.side);
+    console.log('request.user_id', request.user_id);
+    console.log('request.user_id', request.user_id);
+
+    // Validate balances before creating the trade
+    if (request.side === 'buy') {
+      // For buy orders: Check if user has sufficient USDC balance
+      const usdcBalance = await portfolioService.getAssetBalance(
+        request.user_id,
+        request.quote_symbol
+      );
+
+      if (usdcBalance < quoteQuantity) {
+        throw new Error(
+          `Insufficient ${request.quote_symbol} balance. Required: ${quoteQuantity}, Available: ${usdcBalance}`
+        );
+      }
+    } else {
+      // For sell orders: Check if user has sufficient base asset balance
+      const baseAssetBalance = await portfolioService.getAssetBalance(
+        request.user_id,
+        request.base_symbol
+      );
+
+      if (baseAssetBalance < request.base_quantity) {
+        throw new Error(
+          `Insufficient ${request.base_symbol} balance. Required: ${request.base_quantity}, Available: ${baseAssetBalance}`
+        );
+      }
+    }
 
     // Create trade
     const tradeId = uuidv4();
@@ -43,12 +78,20 @@ export class TradeService {
       ]
     );
 
-    // Update portfolio
+    // Update portfolio for base asset
     await portfolioService.updatePortfolio(
       request.user_id,
       baseAssetId,
       request.base_quantity,
       request.price,
+      request.side
+    );
+
+    // Update USDC balance
+    await portfolioService.updateUSDCBalance(
+      request.user_id,
+      quoteAssetId,
+      quoteQuantity,
       request.side
     );
 

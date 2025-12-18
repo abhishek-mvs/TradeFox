@@ -5,10 +5,11 @@ import { GetPortfolioRequestSchema, PortfolioResponse } from '../../utils/serial
 export const getPortfolio = async (req: Request, res: Response): Promise<void> => {
   try {
     const validatedData = GetPortfolioRequestSchema.parse(req.body);
-    const holdings = await portfolioService.getPortfolio(validatedData.user_id);
+    const { holdings, usdcBalance } = await portfolioService.getPortfolio(validatedData.user_id);
     
     const response: PortfolioResponse = {
       user_id: validatedData.user_id,
+      usdc_balance: usdcBalance,
       holdings,
     };
     

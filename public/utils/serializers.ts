@@ -24,10 +24,19 @@ export const GetPnLRequestSchema = z.object({
   user_id: z.string().uuid('Invalid user ID format'),
 });
 
+export const UpdateUSDCBalanceRequestSchema = z.object({
+  user_id: z.string().uuid('Invalid user ID format'),
+  amount: z.number().positive('Amount must be positive'),
+  action: z.enum(['add', 'withdraw'], {
+    errorMap: () => ({ message: 'Action must be either "add" or "withdraw"' }),
+  }),
+});
+
 export type CreateOrderRequest = z.infer<typeof CreateOrderRequestSchema>;
 export type GetOrdersRequest = z.infer<typeof GetOrdersRequestSchema>;
 export type GetPortfolioRequest = z.infer<typeof GetPortfolioRequestSchema>;
 export type GetPnLRequest = z.infer<typeof GetPnLRequestSchema>;
+export type UpdateUSDCBalanceRequest = z.infer<typeof UpdateUSDCBalanceRequestSchema>;
 
 // Response types
 export interface TradeResponse {
@@ -53,7 +62,15 @@ export interface PortfolioItemResponse {
 
 export interface PortfolioResponse {
   user_id: string;
+  usdc_balance: number;
   holdings: PortfolioItemResponse[];
+}
+
+export interface UpdateUSDCBalanceResponse {
+  user_id: string;
+  usdc_balance: number;
+  action: 'add' | 'withdraw';
+  amount: number;
 }
 
 export interface PnLResponse {

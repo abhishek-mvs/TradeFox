@@ -4,7 +4,9 @@ import { z } from 'zod';
 export const CreateOrderRequestSchema = z.object({
   user_id: z.string().uuid('Invalid user ID format'),
   base_symbol: z.string().min(1, 'Base symbol is required'),
-  quote_symbol: z.string().min(1, 'Quote symbol is required'),
+  quote_symbol: z.literal('USDC', {
+    errorMap: () => ({ message: 'Quote symbol must be USDC' }),
+  }),
   price: z.number().positive('Price must be positive'),
   base_quantity: z.number().positive('Base quantity must be positive'),
   side: z.enum(['buy', 'sell'], {
